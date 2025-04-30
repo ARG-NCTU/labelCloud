@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Optional, Set
 import pkg_resources
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import QEvent
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QImageReader, QImage
 from PyQt5.QtWidgets import (
     QAction,
     QActionGroup,
@@ -242,6 +242,43 @@ class GUI(QtWidgets.QMainWindow):
 
         self.label_volume: QtWidgets.QLabel
 
+        self.imageLabel_stitched = QLabel()
+        self.imageLabel_stitched.setAlignment(QtCore.Qt.AlignCenter)
+        self.imageLabel_stitched.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        self.imageLabel_stitched.setMinimumHeight(10)
+        self.imageLabel_stitched.setMaximumHeight(480)
+        self.imageLabel_stitched.setMinimumWidth(10)
+        self.imageLabel_stitched.setMaximumWidth(1920)
+        self.imageLabel_stitched.setStyleSheet("background-color: black;")
+
+        self.imageLabel_back = QLabel()
+        self.imageLabel_back.setAlignment(QtCore.Qt.AlignCenter)
+        self.imageLabel_back.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        self.imageLabel_back.setMinimumHeight(10)
+        self.imageLabel_back.setMaximumHeight(480)
+        self.imageLabel_back.setMinimumWidth(10)
+        self.imageLabel_back.setMaximumWidth(640)
+        self.imageLabel_back.setStyleSheet("background-color: black;")
+
+        # images at bottom
+        self.image_layout = QtWidgets.QHBoxLayout()
+        self.image_layout.setContentsMargins(0, 0, 0, 0)
+        self.image_layout.setSpacing(10)
+        self.image_layout.addWidget(self.imageLabel_stitched)
+        self.image_layout.addWidget(self.imageLabel_back)
+
+        # top: main interface, bottom: images
+        self.main_layout = QtWidgets.QVBoxLayout()
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.setSpacing(5)
+        self.main_layout.addWidget(self.centralWidget())  # original UI
+        self.main_layout.addLayout(self.image_layout)     # stitched + back
+
+        container = QtWidgets.QWidget()
+        container.setLayout(self.main_layout)
+        self.setCentralWidget(container)
+
+
         self.controller = control
 
         # Connect all events to functions
@@ -267,6 +304,42 @@ class GUI(QtWidgets.QMainWindow):
         self.timer.setInterval(20)  # period, in milliseconds
         self.timer.timeout.connect(self.controller.loop_gui)
         self.timer.start()
+
+    def update_image_geometry(self):
+        # Define back image size as 20% width
+        back_width = int(self.width() * 0.2)
+        back_height = int(back_width * 0.75)  # 4:3 aspect ratio
+
+        # Define stitched image height to match back image, and remaining width
+        stitched_height = back_height
+        stitched_width = self.width() - back_width
+
+        # Apply geometry
+        self.imageLabel_stitched.setGeometry(0, self.height() - stitched_height, stitched_width, stitched_height)
+        self.imageLabel_back.setGeometry(stitched_width, self.height() - back_height, back_width, back_height)
+
+
+    def update_image_views(self):
+        pcd_name = self.controller.pcd_manager.pcd_path.stem
+        folder_stitched = config.getpath("FILE", "image_stitched_folder")
+        folder_back = config.getpath("FILE", "image_back_folder")
+
+        stitched_path = folder_stitched / f"{pcd_name}.png"
+        back_path = folder_back / f"{pcd_name}.png"
+
+        if stitched_path.is_file():
+            image = QtGui.QImage(str(stitched_path))
+            self.imageLabel_stitched.setPixmap(QtGui.QPixmap.fromImage(image))
+        else:
+            self.imageLabel_stitched.clear()
+
+        if back_path.is_file():
+            image = QtGui.QImage(str(back_path))
+            self.imageLabel_back.setPixmap(QtGui.QPixmap.fromImage(image))
+        else:
+            self.imageLabel_back.clear()
+
+        self.update_image_geometry()
 
     # Event connectors
     def connect_events(self) -> None:
@@ -627,6 +700,7 @@ class GUI(QtWidgets.QMainWindow):
                 path_to_folder
             )
             logging.info("Changed label folder to %s!" % path_to_folder)
+            self.controller.reload_current_labels()
 
     def update_default_object_class_menu(
         self, new_classes: Optional[Set[str]] = None

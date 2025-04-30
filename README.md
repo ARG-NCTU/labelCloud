@@ -17,22 +17,33 @@ A lightweight tool for labeling 3D bounding boxes in point clouds.
 ## Setup
 :information_source: *Currently labelCloud supports Python 3.7 to 3.9.*
 
-### via pip (PyPI)
-```bash
-pip install labelCloud
-labelCloud --example  # start labelCloud with example point cloud
-```
-
 ### via git (manually)
 
 ```bash
-git clone https://github.com/ch-sa/labelCloud.git  # 1. Clone repository
-pip install -r requirements.txt  # 2. Install requirements
-# 3. Copy point clouds into `pointclouds` folder.
-python3 labelCloud.py  # 4. Start labelCloud
+git clone git@github.com:ARG-NCTU/labelCloud.git
+```
+
+### Download the sample data on NAS
+
+Donload from NAS: [Link](http://gofile.me/773h8/Rbgs2Pcqi).
+
+Then unzip it and put this under labelCloud repo root directory.
+
+### Run the code to start labeling
+
+```bash
+cd ~/labelCloud/
+source Docker/cpu/run.sh
+python3 labelCloud.py
 ```
 
 Configure the software to your needs by editing the `config.ini` file or settings (see [Configuration](https://ch-sa.github.io/labelCloud/configuration/)).
+
+Example for labeling:
+
+![Welcome](docs/assets/welcome_custom.png)
+
+![Label](docs/assets/label_custom.png)
 
 ## Labeling
 labelCloud supports two different ways of labeling (*picking* & *spanning*) as well as multiple mouse and keyboard options for subsequent correction.

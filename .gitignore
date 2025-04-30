@@ -187,3 +187,7 @@ cython_debug/
 
 # pyenv local
 .python-version
+
+# data
+argnctu-perception/
+argnctu-perception.zip

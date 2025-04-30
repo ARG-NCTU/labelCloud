@@ -1,5 +1,6 @@
 import logging
 from typing import Optional
+from pathlib import Path
 
 import numpy as np
 from PyQt5 import QtGui
@@ -8,6 +9,7 @@ from PyQt5.QtCore import Qt as Keys
 
 from ..definitions import BBOX_SIDES, Colors, Context, LabelingMode
 from ..io.labels.config import LabelConfig
+from ..io.labels.vertices import VerticesFormat
 from ..utils import oglhelper
 from ..view.gui import GUI
 from .alignmode import AlignMode
@@ -40,6 +42,10 @@ class Controller:
         self.side_mode = False
         self.selected_side: Optional[str] = None
 
+        # Label format loader
+        self.label_dir: Optional[Path] = None
+        self.label_format: Optional[VerticesFormat] = None
+
     def startup(self, view: "GUI") -> None:
         """Sets the view in all controllers and dependent modules; Loads labels from file."""
         self.view = view
@@ -60,6 +66,12 @@ class Controller:
         self.set_selected_side()
         self.view.gl_widget.updateGL()
 
+    def reload_current_labels(self) -> None:
+        self.bbox_controller.set_bboxes(
+            self.pcd_manager.get_labels_from_file()
+        )
+        self.bbox_controller.set_active_bbox(0)
+    
     # POINT CLOUD METHODS
     def next_pcd(self, save: bool = True) -> None:
         if save:
@@ -68,7 +80,11 @@ class Controller:
             previous_bboxes = self.bbox_controller.bboxes
             self.pcd_manager.get_next_pcd()
             self.reset()
-            self.bbox_controller.set_bboxes(self.pcd_manager.get_labels_from_file())
+            if self.label_format:
+                pcd_path = self.pcd_manager.current_path
+                self.bbox_controller.set_bboxes(self.label_format.import_labels(pcd_path))
+            else:
+                self.bbox_controller.set_bboxes(self.pcd_manager.get_labels_from_file())
 
             if not self.bbox_controller.bboxes and config.getboolean(
                 "LABEL", "propagate_labels"
@@ -78,20 +94,32 @@ class Controller:
         else:
             self.view.update_progress(len(self.pcd_manager.pcds))
             self.view.button_next_pcd.setEnabled(False)
+        self.view.update_image_views()
 
     def prev_pcd(self) -> None:
         self.save()
         if self.pcd_manager.current_id > 0:
             self.pcd_manager.get_prev_pcd()
             self.reset()
-            self.bbox_controller.set_bboxes(self.pcd_manager.get_labels_from_file())
+            if self.label_format:
+                pcd_path = self.pcd_manager.current_path
+                self.bbox_controller.set_bboxes(self.label_format.import_labels(pcd_path))
+            else:
+                self.bbox_controller.set_bboxes(self.pcd_manager.get_labels_from_file())
             self.bbox_controller.set_active_bbox(0)
+        self.view.update_image_views()
 
     def custom_pcd(self, custom: int) -> None:
         self.save()
         self.pcd_manager.get_custom_pcd(custom)
         self.reset()
-        self.bbox_controller.set_bboxes(self.pcd_manager.get_labels_from_file())
+        if self.label_format:
+            pcd_path = self.pcd_manager.current_path
+            self.bbox_controller.set_bboxes(self.label_format.import_labels(pcd_path))
+        else:
+            self.bbox_controller.set_bboxes(self.pcd_manager.get_labels_from_file())
+        self.view.update_image_views()
+
 
     # CONTROL METHODS
     def save(self) -> None:
@@ -193,8 +221,8 @@ class Controller:
         if self.last_cursor_pos:
             dx = (
                 self.last_cursor_pos.x() - a0.x()
-            ) / 5  # Calculate relative movement from last click position
-            dy = (self.last_cursor_pos.y() - a0.y()) / 5
+            ) #/ 5  # Calculate relative movement from last click position
+            dy = (self.last_cursor_pos.y() - a0.y()) #/ 5
 
             if (
                 self.ctrl_pressed
@@ -210,8 +238,8 @@ class Controller:
                     self.bbox_controller.set_center(*new_center)  # absolute positioning
             else:
                 if a0.buttons() & Keys.LeftButton:  # pcd rotation
-                    self.pcd_manager.rotate_around_x(dy)
-                    self.pcd_manager.rotate_around_z(dx)
+                    self.pcd_manager.rotate_around_x(dy * 0.2)
+                    self.pcd_manager.rotate_around_z(dx * 0.2)
                 elif a0.buttons() & Keys.RightButton:  # pcd translation
                     self.pcd_manager.translate_along_x(dx)
                     self.pcd_manager.translate_along_y(dy)
@@ -237,10 +265,10 @@ class Controller:
             self.drawing_mode.drawing_strategy.register_scrolling(a0.angleDelta().y())
         elif self.side_mode and self.bbox_controller.has_active_bbox():
             self.bbox_controller.get_active_bbox().change_side(  # type: ignore
-                self.selected_side, -a0.angleDelta().y() / 4000  # type: ignore
+                self.selected_side, -a0.angleDelta().y() /800 #/ 4000  # type: ignore
             )  # ToDo implement method
         else:
-            self.pcd_manager.zoom_into(a0.angleDelta().y())
+            self.pcd_manager.zoom_into(a0.angleDelta().y() * 5)
             self.scroll_mode = True
 
     def key_press_event(self, a0: QtGui.QKeyEvent) -> None:
