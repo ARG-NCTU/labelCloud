@@ -189,5 +189,6 @@ cython_debug/
 .python-version
 
 # data
-argnctu-perception/
-argnctu-perception.zip
+south-tw-maritime-multi-modal-dataset/
+south-tw-maritime-multi-modal-dataset-backup/
+south-tw-maritime-multi-modal-dataset.zip

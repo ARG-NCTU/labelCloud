@@ -79,6 +79,9 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 ENV QT_DEBUG_PLUGINS=1
 
+##################################### labelme #####################################
+RUN pip3 install labelme
+
 ##################################### setting ###################################################
 
 RUN chown -R ${USER}:${USER} ${HOME}/

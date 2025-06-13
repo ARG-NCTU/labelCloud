@@ -42,7 +42,10 @@ def colorize_points_with_height(
 
     colors = np.zeros(points.shape)
     for ind, height in enumerate(points[:, 2]):
-        colors[ind] = palette[round((height - z_min) / (z_max - z_min) * palette_len)]
+        if z_max - z_min == 0:
+            colors[ind] = palette[0]
+        else:
+            colors[ind] = palette[round((height - z_min) / (z_max - z_min) * palette_len)]
     return colors.astype(np.float32)
 
 

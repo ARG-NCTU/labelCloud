@@ -5,11 +5,12 @@ import sys
 import traceback
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Set
+import json
 
 import pkg_resources
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
-from PyQt5.QtCore import QEvent
-from PyQt5.QtGui import QPixmap, QImageReader, QImage
+from PyQt5.QtCore import QEvent, Qt
+from PyQt5.QtGui import QPixmap, QImageReader, QImage, QPixmap, QPainter, QColor, QPen, QFont
 from PyQt5.QtWidgets import (
     QAction,
     QActionGroup,
@@ -305,6 +306,44 @@ class GUI(QtWidgets.QMainWindow):
         self.timer.timeout.connect(self.controller.loop_gui)
         self.timer.start()
 
+    def load_labelme_bboxes(self, json_path):
+        if not json_path.is_file():
+            logging.warning(f"JSON file {json_path} does not exist.")
+            return []
+        
+        with open(json_path, 'r') as f:
+            data = json.load(f)
+
+        bboxes = []
+        for shape in data['shapes']:
+            if shape['shape_type'] == 'rectangle':
+                (x1, y1), (x2, y2) = shape['points']
+                x, y, w, h = int(min(x1, x2)), int(min(y1, y2)), int(abs(x2 - x1)), int(abs(y2 - y1))
+                label = shape.get("label", "unknown")
+                bboxes.append((x, y, w, h, label))
+        return bboxes
+
+    def draw_bboxes_on_image(self, image_path, json_path):
+        pixmap = QPixmap(str(image_path))
+        painter = QPainter(pixmap)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        pen = QPen(QColor(0, 255, 0))
+        pen.setWidth(2)
+        painter.setPen(pen)
+        font = QFont()
+        font.setPointSize(10)
+        painter.setFont(font)
+
+        bboxes = self.load_labelme_bboxes(json_path)
+
+        for x, y, w, h, label in bboxes:
+            painter.drawRect(x, y, w, h)
+            painter.drawText(x, y - 5, label)
+
+        painter.end()
+        return pixmap
+
     def update_image_geometry(self):
         # Define back image size as 20% width
         back_width = int(self.width() * 0.2)
@@ -321,21 +360,33 @@ class GUI(QtWidgets.QMainWindow):
 
     def update_image_views(self):
         pcd_name = self.controller.pcd_manager.pcd_path.stem
-        folder_stitched = config.getpath("FILE", "image_stitched_folder")
-        folder_back = config.getpath("FILE", "image_back_folder")
+        image_stitched_folder = config.getpath("FILE", "image_stitched_folder")
+        json_stitched_folder = config.getpath("FILE", "json_stitched_folder")
+        image_back_folder = config.getpath("FILE", "image_back_folder")
+        json_back_folder  = config.getpath("FILE", "json_back_folder")
 
-        stitched_path = folder_stitched / f"{pcd_name}.png"
-        back_path = folder_back / f"{pcd_name}.png"
+        image_stitched_path = image_stitched_folder / f"{pcd_name}.png"
+        json_stitched_path = json_stitched_folder / f"{pcd_name}.json"
+        image_back_path = image_back_folder / f"{pcd_name}.png"
+        json_back_path = json_back_folder / f"{pcd_name}.json"
 
-        if stitched_path.is_file():
-            image = QtGui.QImage(str(stitched_path))
-            self.imageLabel_stitched.setPixmap(QtGui.QPixmap.fromImage(image))
+        if image_stitched_path.is_file():
+            if json_stitched_path.is_file():
+                image = self.draw_bboxes_on_image(image_stitched_path, json_stitched_path)
+                self.imageLabel_stitched.setPixmap(image)
+            else:
+                image = QtGui.QImage(str(image_stitched_path))
+                self.imageLabel_stitched.setPixmap(QtGui.QPixmap.fromImage(image))
         else:
             self.imageLabel_stitched.clear()
 
-        if back_path.is_file():
-            image = QtGui.QImage(str(back_path))
-            self.imageLabel_back.setPixmap(QtGui.QPixmap.fromImage(image))
+        if image_back_path.is_file():
+            if json_back_path.is_file():
+                image = self.draw_bboxes_on_image(image_back_path, json_back_path)
+                self.imageLabel_back.setPixmap(image)
+            else:
+                image = QtGui.QImage(str(image_back_path))
+                self.imageLabel_back.setPixmap(QtGui.QPixmap.fromImage(image))
         else:
             self.imageLabel_back.clear()
 
