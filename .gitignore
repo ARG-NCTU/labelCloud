@@ -189,6 +189,5 @@ cython_debug/
 .python-version
 
 # data
-south-tw-maritime-multi-modal-dataset/
-south-tw-maritime-multi-modal-dataset-backup/
+south-tw-maritime-multi-modal-dataset*/
 south-tw-maritime-multi-modal-dataset.zip

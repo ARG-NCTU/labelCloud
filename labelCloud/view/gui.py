@@ -371,12 +371,14 @@ class GUI(QtWidgets.QMainWindow):
         json_back_path = json_back_folder / f"{pcd_name}.json"
 
         if image_stitched_path.is_file():
-            if json_stitched_path.is_file():
-                image = self.draw_bboxes_on_image(image_stitched_path, json_stitched_path)
-                self.imageLabel_stitched.setPixmap(image)
-            else:
-                image = QtGui.QImage(str(image_stitched_path))
-                self.imageLabel_stitched.setPixmap(QtGui.QPixmap.fromImage(image))
+            # if json_stitched_path.is_file():
+            #     image = self.draw_bboxes_on_image(image_stitched_path, json_stitched_path)
+            #     self.imageLabel_stitched.setPixmap(image)
+            # else:
+            #     image = QtGui.QImage(str(image_stitched_path))
+            #     self.imageLabel_stitched.setPixmap(QtGui.QPixmap.fromImage(image))
+            image = QtGui.QImage(str(image_stitched_path))
+            self.imageLabel_stitched.setPixmap(QtGui.QPixmap.fromImage(image))
         else:
             self.imageLabel_stitched.clear()
 
