@@ -246,27 +246,32 @@ class GUI(QtWidgets.QMainWindow):
         self.imageLabel_stitched = QLabel()
         self.imageLabel_stitched.setAlignment(QtCore.Qt.AlignCenter)
         self.imageLabel_stitched.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.imageLabel_stitched.setMinimumHeight(10)
-        self.imageLabel_stitched.setMaximumHeight(480)
-        self.imageLabel_stitched.setMinimumWidth(10)
-        self.imageLabel_stitched.setMaximumWidth(1920)
+        # self.imageLabel_stitched.setMinimumHeight(10)
+        # self.imageLabel_stitched.setMaximumHeight(480)
+        # self.imageLabel_stitched.setMinimumWidth(10)
+        # self.imageLabel_stitched.setMaximumWidth(1920)
+        self.imageLabel_stitched.setScaledContents(True)
+        self.imageLabel_stitched.setMinimumHeight(300)
+        self.imageLabel_stitched.setMaximumHeight(400) 
+        self.imageLabel_stitched.setMinimumWidth(1200)
+        self.imageLabel_stitched.setMaximumWidth(1600)
         self.imageLabel_stitched.setStyleSheet("background-color: black;")
 
-        self.imageLabel_back = QLabel()
-        self.imageLabel_back.setAlignment(QtCore.Qt.AlignCenter)
-        self.imageLabel_back.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
-        self.imageLabel_back.setMinimumHeight(10)
-        self.imageLabel_back.setMaximumHeight(480)
-        self.imageLabel_back.setMinimumWidth(10)
-        self.imageLabel_back.setMaximumWidth(640)
-        self.imageLabel_back.setStyleSheet("background-color: black;")
+        # self.imageLabel_back = QLabel()
+        # self.imageLabel_back.setAlignment(QtCore.Qt.AlignCenter)
+        # self.imageLabel_back.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
+        # self.imageLabel_back.setMinimumHeight(10)
+        # self.imageLabel_back.setMaximumHeight(480)
+        # self.imageLabel_back.setMinimumWidth(10)
+        # self.imageLabel_back.setMaximumWidth(640)
+        # self.imageLabel_back.setStyleSheet("background-color: black;")
 
         # images at bottom
         self.image_layout = QtWidgets.QHBoxLayout()
         self.image_layout.setContentsMargins(0, 0, 0, 0)
         self.image_layout.setSpacing(10)
         self.image_layout.addWidget(self.imageLabel_stitched)
-        self.image_layout.addWidget(self.imageLabel_back)
+        # self.image_layout.addWidget(self.imageLabel_back)
 
         # top: main interface, bottom: images
         self.main_layout = QtWidgets.QVBoxLayout()
@@ -358,17 +363,18 @@ class GUI(QtWidgets.QMainWindow):
         self.imageLabel_back.setGeometry(stitched_width, self.height() - back_height, back_width, back_height)
 
 
+
     def update_image_views(self):
         pcd_name = self.controller.pcd_manager.pcd_path.stem
         image_stitched_folder = config.getpath("FILE", "image_stitched_folder")
         json_stitched_folder = config.getpath("FILE", "json_stitched_folder")
-        image_back_folder = config.getpath("FILE", "image_back_folder")
-        json_back_folder  = config.getpath("FILE", "json_back_folder")
+        # image_back_folder = config.getpath("FILE", "image_back_folder")
+        # json_back_folder  = config.getpath("FILE", "json_back_folder")
 
         image_stitched_path = image_stitched_folder / f"{pcd_name}.png"
         json_stitched_path = json_stitched_folder / f"{pcd_name}.json"
-        image_back_path = image_back_folder / f"{pcd_name}.png"
-        json_back_path = json_back_folder / f"{pcd_name}.json"
+        # image_back_path = image_back_folder / f"{pcd_name}.png"
+        # json_back_path = json_back_folder / f"{pcd_name}.json"
 
         if image_stitched_path.is_file():
             # if json_stitched_path.is_file():
@@ -378,21 +384,39 @@ class GUI(QtWidgets.QMainWindow):
             #     image = QtGui.QImage(str(image_stitched_path))
             #     self.imageLabel_stitched.setPixmap(QtGui.QPixmap.fromImage(image))
             image = QtGui.QImage(str(image_stitched_path))
-            self.imageLabel_stitched.setPixmap(QtGui.QPixmap.fromImage(image))
+            # self.imageLabel_stitched.setPixmap(QtGui.QPixmap.fromImage(image))
+            
+            pixmap = QtGui.QPixmap.fromImage(image)
+
+            # scaled_pixmap = pixmap.scaled(
+            #     self.imageLabel_stitched.width(),
+            #     self.imageLabel_stitched.height(),
+            #     Qt.KeepAspectRatio,
+            #     Qt.SmoothTransformation
+            # )
+
+            # self.imageLabel_stitched.setPixmap(scaled_pixmap)
+            
+            window_width = self.width() # 預留邊距
+            scaled_pixmap = pixmap.scaledToWidth(
+                window_width,
+                Qt.SmoothTransformation
+            )
+            self.imageLabel_stitched.setPixmap(scaled_pixmap)
         else:
             self.imageLabel_stitched.clear()
 
-        if image_back_path.is_file():
-            if json_back_path.is_file():
-                image = self.draw_bboxes_on_image(image_back_path, json_back_path)
-                self.imageLabel_back.setPixmap(image)
-            else:
-                image = QtGui.QImage(str(image_back_path))
-                self.imageLabel_back.setPixmap(QtGui.QPixmap.fromImage(image))
-        else:
-            self.imageLabel_back.clear()
+        # if image_back_path.is_file():
+        #     if json_back_path.is_file():
+        #         image = self.draw_bboxes_on_image(image_back_path, json_back_path)
+        #         self.imageLabel_back.setPixmap(image)
+        #     else:
+        #         image = QtGui.QImage(str(image_back_path))
+        #         self.imageLabel_back.setPixmap(QtGui.QPixmap.fromImage(image))
+        # else:
+        #     self.imageLabel_back.clear()
 
-        self.update_image_geometry()
+        # self.update_image_geometry()
 
     # Event connectors
     def connect_events(self) -> None:
